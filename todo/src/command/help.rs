@@ -3,11 +3,7 @@ use crate::command::*;
 
 pub struct Help {}
 impl Command for Help {
-    fn new() -> Help {
-        Help {}
-    }
-
-    fn run(&self, _args: &[&str]) {
+    fn run(&mut self, _args: &[&str]) {
         for elem in get_all_command_descriptions() {
             println!("{}", elem);
         }
@@ -15,7 +11,7 @@ impl Command for Help {
 }
 
 impl Describe for Help {
-    fn describe(&self) -> String {
+    fn describe() -> String {
         String::from("help - Prints all available commands")
     }
 }

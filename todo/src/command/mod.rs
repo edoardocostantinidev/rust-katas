@@ -1,16 +1,18 @@
 pub mod exit;
 pub mod help;
+pub mod todo;
 
 pub trait Command {
-    fn new() -> Self;
-    fn run(&self, args: &[&str]);
+    fn run(&mut self, args: &[&str]);
 }
 pub trait Describe {
-    fn describe(&self) -> String;
+    fn describe() -> String;
 }
 
 pub fn get_all_command_descriptions() -> Vec<String> {
-    let help = help::Help::new();
-    let exit = exit::Exit::new();
-    vec![help.describe(), exit.describe()]
+    vec![
+        help::Help::describe(),
+        exit::Exit::describe(),
+        todo::Todo::describe(),
+    ]
 }

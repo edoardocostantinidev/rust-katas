@@ -1,12 +1,15 @@
 use crate::command::exit::Exit;
 use crate::command::help::Help;
+use crate::command::todo::Todo;
 use crate::command::Command;
+use crate::service::TodoService;
+
 use std::io;
-pub fn run() {
+pub fn run(todo_service: TodoService) {
     greet();
     loop {
         let input = get_input();
-        process_input(input);
+        process_input(input, todo_service.clone());
     }
 }
 pub fn greet() {
@@ -21,19 +24,17 @@ pub fn get_input() -> String {
     input
 }
 
-pub fn process_input(input: String) {
+pub fn process_input(input: String, todo_service: TodoService) {
     let input = input.trim();
     let input_split = input.split(" ").collect::<Vec<&str>>();
     let command = input_split[0];
     let args = &input_split[1..];
     println!("<===========TODO===========>");
     match command {
-        "help" => {
-            Help {}.run(args);
-        }
-        "exit" => {
-            Exit {}.run(args);
-        }
+        "help" => Help {}.run(args),
+
+        "todo" => Todo::new(todo_service).run(args),
+        "exit" => Exit {}.run(args),
         _ => println!("Command not found"),
     }
 }
