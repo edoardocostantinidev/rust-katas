@@ -18,6 +18,7 @@ pub fn greet() {
 
 pub fn get_input() -> String {
     let mut input = String::new();
+    print!(">");
     io::stdin()
         .read_line(&mut input)
         .expect("Failed to read line");
