@@ -1,3 +1,6 @@
+use todo::app;
 fn main() {
-    println!("Hello, world!");
+    println!("Starting Todo App 🚀");
+    let app = App {};
+    app.run();
 }
