@@ -1,6 +1,8 @@
 use crate::context::Context;
 use crate::model::Todo;
+use cli_table::{print_stdout, Cell, Style, Table};
 use std::collections::HashMap;
+
 pub type FnPointer = fn(Context, Vec<String>) -> Result<Context, String>;
 
 pub struct Command {
@@ -84,7 +86,33 @@ impl CommandBuilder {
                         println!("todo created with id: {}", id);
                     }
                     "retrieve" => {
-                        println!("retrieve todo");
+                        if args.len() == 1 {
+                            let todo_cells = context
+                                .todos
+                                .iter()
+                                .map(|(k, v)| vec![k.cell(), v.clone().title.cell()]);
+                            let table = todo_cells
+                                .table()
+                                .title(vec!["ID".cell().bold(true), "Title".cell().bold(true)]);
+                            print_stdout(table).unwrap();
+                        }
+
+                        if args.len() == 2 {
+                            let id = args[1].parse::<i32>().unwrap();
+                            let todo = context.todos.get(&id);
+                            if todo.is_none() {
+                                return Err(format!("todo with id {} not found", id));
+                            }
+                            let todo = todo.unwrap();
+                            let checklist = todo.checklist.clone();
+                            let checklist_cells =
+                                checklist.iter().map(|(k, v)| vec![k.cell(), v.cell()]);
+                            let table = checklist_cells.table().title(vec![
+                                "Checklist Item".cell().bold(true),
+                                "Completed".cell().bold(true),
+                            ]);
+                            print_stdout(table).unwrap();
+                        }
                     }
                     "update" => {
                         println!("update todo");
