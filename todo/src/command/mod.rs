@@ -48,6 +48,7 @@ impl CommandBuilder {
             "todo",
             description,
             |context, args| -> Result<Context, String> {
+                let mut new_context: Context = Context::new();
                 let no_args_message =
                     "todo command requires an argument such as (create, retrieve, update, delete)";
                 if args.len() == 0 {
@@ -56,11 +57,12 @@ impl CommandBuilder {
                 }
                 match args[0].as_str() {
                     "create" => {
+                        if args.len() < 2 {
+                            return Err("todo create {} <- title missing".to_string());
+                        }
                         let mut todos = context.todos;
                         let id = context.last_id + 1;
-                        print!("Enter todo title: ");
-                        let mut title = String::new();
-                        std::io::stdin().read_line(&mut title).unwrap();
+                        let title = String::from(args[1].clone());
 
                         todos.insert(
                             id,
@@ -70,8 +72,9 @@ impl CommandBuilder {
                                 checklist: HashMap::new(),
                             },
                         );
-
-                        println!("todo created with id: {}", 0);
+                        new_context.last_id = id;
+                        new_context.todos = todos;
+                        println!("todo created with id: {}", id);
                     }
                     "retrieve" => {
                         println!("retrieve todo");
@@ -89,8 +92,29 @@ impl CommandBuilder {
                         println!("{}", no_args_message);
                     }
                 }
-                Ok(context)
+                Ok(new_context)
             },
         )
+    }
+}
+
+//tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_help() {
+        let command = CommandBuilder::help();
+        assert_eq!(command.name, "help");
+    }
+    #[test]
+    fn test_todo() {
+        let command = CommandBuilder::todo();
+        assert_eq!(command.name, "todo");
+        let context: Context = Context::new();
+        let new_context =
+            (command.handler)(context, vec!["create".to_string(), "test1".to_string()]).unwrap();
+        assert_eq!(new_context.todos.len(), 1);
+        assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
     }
 }
