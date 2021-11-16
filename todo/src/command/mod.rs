@@ -63,15 +63,22 @@ impl CommandBuilder {
                         let mut todos = context.todos;
                         let id = context.last_id + 1;
                         let title = String::from(args[1].clone());
+                        let mut todo = Todo {
+                            title: title,
+                            completed: false,
+                            checklist: HashMap::new(),
+                        };
 
-                        todos.insert(
-                            id,
-                            Todo {
-                                title: title,
-                                completed: false,
-                                checklist: HashMap::new(),
-                            },
-                        );
+                        if args.len() > 2 {
+                            let mut checklist = HashMap::new();
+                            for i in 2..args.len() {
+                                let item = String::from(args[i].clone());
+                                checklist.insert(item, false);
+                            }
+                            todo.checklist = checklist;
+                        }
+
+                        todos.insert(id, todo);
                         new_context.last_id = id;
                         new_context.todos = todos;
                         println!("todo created with id: {}", id);
@@ -112,9 +119,17 @@ mod tests {
         let command = CommandBuilder::todo();
         assert_eq!(command.name, "todo");
         let context: Context = Context::new();
-        let new_context =
-            (command.handler)(context, vec!["create".to_string(), "test1".to_string()]).unwrap();
+        let new_context = (command.handler)(
+            context,
+            vec![
+                "create".to_string(),
+                "test1".to_string(),
+                "checklist1".to_string(),
+            ],
+        )
+        .unwrap();
         assert_eq!(new_context.todos.len(), 1);
         assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
+        assert_eq!(new_context.todos.get(&1).unwrap().checklist.len(), 1);
     }
 }
