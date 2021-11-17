@@ -1,9 +1,4 @@
-pub mod app;
-pub mod command;
-pub mod context;
-pub mod model;
-pub mod parser;
-use app::App;
+use todo::app::App;
 
 fn main() {
     println!("Starting Todo App 🚀");

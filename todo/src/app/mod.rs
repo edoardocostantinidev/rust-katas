@@ -18,10 +18,8 @@ impl App {
             let input = self.read_input();
             let command = self.parser.parse(input);
             match command {
-                Ok(cmd) => match (cmd.handler)(self.context.clone(), cmd.args) {
-                    Ok(context) => {
-                        self.context = context;
-                    }
+                Ok(cmd) => match (cmd.handler)(&mut self.context, cmd.args) {
+                    Ok(_) => {}
                     Err(e) => eprintln!("{}", e),
                 },
                 Err(e) => {
