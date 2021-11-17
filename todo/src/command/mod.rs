@@ -50,7 +50,7 @@ impl CommandBuilder {
             "todo",
             description,
             |context, args| -> Result<Context, String> {
-                let mut new_context: Context = Context::new();
+                let mut new_context = context.clone();
                 let no_args_message =
                     "todo command requires an argument such as (create, retrieve, update, delete)";
                 if args.len() == 0 {
@@ -115,10 +115,59 @@ impl CommandBuilder {
                         }
                     }
                     "update" => {
-                        println!("update todo");
+                        if args.len() == 1 {
+                            return Err(
+                                "todo update {} <- update field missing (e.g. status, checklist)"
+                                    .to_string(),
+                            );
+                        }
+                        if args.len() == 2 {
+                            return Err("todo update {} {} <- id missing".to_string());
+                        }
+
+                        let field = args[1].clone();
+                        let id = &args[2].parse::<i32>().unwrap();
+                        match field.as_str() {
+                            "status" => {
+                                if args.len() == 3 {
+                                    return Err(format!(
+                                        "todo update {} {} {} <- value missing",
+                                        field, id, ""
+                                    ));
+                                }
+                                let status = args[3].parse::<bool>().unwrap();
+                                let mut todo = new_context.todos.get_mut(id).unwrap();
+                                todo.completed = status;
+                            }
+                            "checklist" => {
+                                if args.len() == 3 {
+                                    return Err(format!(
+                                        "todo update {} {} {} <- checklist item id missing",
+                                        field, id, ""
+                                    ));
+                                }
+
+                                let item_id = args[3].clone();
+                                let todo = new_context.todos.get_mut(id).unwrap();
+                                let mut checklist_to_update = todo.checklist.clone();
+                                let item = checklist_to_update.get_mut(&item_id).unwrap().clone();
+                                checklist_to_update.insert(item_id, !item);
+                                todo.checklist = checklist_to_update;
+                            }
+                            _ => {
+                                return Err(format!(
+                                    "todo update {} {} <- update field not found",
+                                    field, id
+                                ));
+                            }
+                        }
                     }
                     "delete" => {
-                        println!("delete todo");
+                        if args.len() == 1 {
+                            return Err("todo delete {} <- id missing".to_string());
+                        }
+                        let id = args[1].parse::<i32>().unwrap();
+                        new_context.todos.remove(&id);
                     }
                     "help" => {
                         println!("help message here");
@@ -143,7 +192,7 @@ mod tests {
         assert_eq!(command.name, "help");
     }
     #[test]
-    fn test_todo() {
+    fn test_todo_create() {
         let command = CommandBuilder::todo();
         assert_eq!(command.name, "todo");
         let context: Context = Context::new();
@@ -159,5 +208,106 @@ mod tests {
         assert_eq!(new_context.todos.len(), 1);
         assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
         assert_eq!(new_context.todos.get(&1).unwrap().checklist.len(), 1);
+    }
+
+    //test delete
+    #[test]
+    fn test_todo_delete() {
+        let command = CommandBuilder::todo();
+        assert_eq!(command.name, "todo");
+        let context: Context = Context::new();
+        let new_context = (command.handler)(
+            context,
+            vec![
+                "create".to_string(),
+                "test1".to_string(),
+                "checklist1".to_string(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(new_context.todos.len(), 1);
+        assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
+        assert_eq!(new_context.todos.get(&1).unwrap().checklist.len(), 1);
+        let new_context =
+            (command.handler)(new_context, vec!["delete".to_string(), "1".to_string()]).unwrap();
+        assert_eq!(new_context.todos.len(), 0);
+    }
+
+    //test update
+    #[test]
+    fn test_todo_update() {
+        let command = CommandBuilder::todo();
+        assert_eq!(command.name, "todo");
+        let context: Context = Context::new();
+        let new_context = (command.handler)(
+            context,
+            vec![
+                "create".to_string(),
+                "test1".to_string(),
+                "checklist1".to_string(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(new_context.todos.len(), 1);
+        assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
+        assert_eq!(new_context.todos.get(&1).unwrap().checklist.len(), 1);
+        let new_context = (command.handler)(
+            new_context,
+            vec![
+                "update".to_string(),
+                "status".to_string(),
+                "1".to_string(),
+                "true".to_string(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(new_context.todos.len(), 1);
+        assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
+        assert_eq!(new_context.todos.get(&1).unwrap().checklist.len(), 1);
+        assert_eq!(new_context.todos.get(&1).unwrap().completed, true);
+    }
+
+    //test todo update checklist
+    #[test]
+    fn test_todo_update_checklist() {
+        let command = CommandBuilder::todo();
+        assert_eq!(command.name, "todo");
+        let context: Context = Context::new();
+        let new_context = (command.handler)(
+            context,
+            vec![
+                "create".to_string(),
+                "test1".to_string(),
+                "checklist1".to_string(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(new_context.todos.len(), 1);
+        assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
+        assert_eq!(new_context.todos.get(&1).unwrap().checklist.len(), 1);
+        let new_context = (command.handler)(
+            new_context,
+            vec![
+                "update".to_string(),
+                "checklist".to_string(),
+                "1".to_string(),
+                "checklist1".to_string(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(new_context.todos.len(), 1);
+        assert_eq!(new_context.todos.get(&1).unwrap().title, "test1");
+        assert_eq!(new_context.todos.get(&1).unwrap().checklist.len(), 1);
+        assert_eq!(
+            new_context
+                .todos
+                .get(&1)
+                .unwrap()
+                .checklist
+                .get("checklist1")
+                .unwrap()
+                .clone(),
+            true
+        );
     }
 }
